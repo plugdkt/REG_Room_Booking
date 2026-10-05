@@ -24,6 +24,10 @@ $values = form_values($b, date('Y-m-d'));
 // พื้นหลัง: SVG ของแบบฟอร์มต้นฉบับ ฝังในหน้าโดยตรงเพื่อให้ PDF เป็นเวกเตอร์คมชัด
 $bg = file_get_contents(APP_ROOT . "/templates/$type.svg");
 $bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 class="bg" id="form-bg"', $bg, 1);
+
+// ฟอนต์ข้อมูลที่กรอก: ฝัง TH Sarabun New ไว้ในหน้า ไม่พึ่งฟอนต์ที่ติดตั้งบนเซิร์ฟเวอร์
+// (Chrome ที่รันโดย IIS มองไม่เห็นฟอนต์ที่ติดตั้งแบบ "เฉพาะผู้ใช้" จึงเคยออกมาเป็นฟอนต์อื่น)
+$fontData = base64_encode((string)file_get_contents(APP_ROOT . '/assets/fonts/THSarabunNew.ttf'));
 ?>
 <!doctype html>
 <html lang="th">
@@ -35,7 +39,8 @@ $bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 cl
   html, body { margin: 0; background: #e9e6ee; }
   .page { position: relative; width: 595.32pt; height: 841.92pt; margin: 12px auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.15); overflow: hidden; }
   .page svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .ov text { font-family: "TH Sarabun New", "THSarabunNew", "TH SarabunPSK", sans-serif; font-size: 15px; fill: #000; }
+  @font-face { font-family: "EForm Sarabun"; src: url(data:font/ttf;base64,<?= $fontData ?>) format("truetype"); font-display: block; }
+  .ov text { font-family: "EForm Sarabun", "TH Sarabun New", "TH SarabunPSK", sans-serif; font-size: 15px; fill: #000; }
   .ov text.tick { font-family: "Segoe UI Symbol", "DejaVu Sans", sans-serif; font-size: 10px; font-weight: 700; }
   .toolbar { position: sticky; top: 0; z-index: 2; background: #3f1d5e; color: #fff; padding: 8px 16px; display: flex; gap: 12px; align-items: center; font-family: "Leelawadee UI", Tahoma, sans-serif; font-size: 14px; }
   .toolbar button, .toolbar a { font: inherit; padding: 4px 14px; border-radius: 6px; border: 0; cursor: pointer; text-decoration: none; background: #c9a227; color: #2b1c00; }
@@ -82,14 +87,20 @@ $bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 cl
 </div>
 
 <script>
-  // ข้อความที่ยาวเกินช่อง: บีบให้พอดีความยาวเส้นจุด
-  document.querySelectorAll('.ov text').forEach(t => {
-    const max = parseFloat(t.dataset.max);
-    if (t.getComputedTextLength() > max) {
-      t.setAttribute('textLength', max);
-      t.setAttribute('lengthAdjust', 'spacingAndGlyphs');
-    }
-  });
+  // ข้อความที่ยาวเกินช่อง: บีบให้พอดีความยาวเส้นจุด — วัดใหม่หลังฟอนต์ที่ฝังโหลดเสร็จ
+  function fitTexts() {
+    document.querySelectorAll('.ov text').forEach(t => {
+      t.removeAttribute('textLength');
+      t.removeAttribute('lengthAdjust');
+      const max = parseFloat(t.dataset.max);
+      if (t.getComputedTextLength() > max) {
+        t.setAttribute('textLength', max);
+        t.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+      }
+    });
+  }
+  fitTexts();
+  if (document.fonts) document.fonts.ready.then(fitTexts);
 
   function submitToDMS(ref) {
     if (!confirm('ยืนยันส่งเอกสารหมายเลข #' + ref + ' เข้าสู่ระบบ DMS?')) {

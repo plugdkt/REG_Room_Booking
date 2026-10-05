@@ -223,7 +223,8 @@ function pdf_generate(array $b): string
     $printUrl = $base . '/print_booking.php?ref=' . rawurlencode($b['ref']);
 
     // บน Windows IIS ใช้ cmd.exe /c เพื่อไม่ให้ติด Access Denied ของ ProcessSingleton
-    $cmd = 'cmd.exe /c ""' . $chrome . '" --headless=new --disable-gpu --no-sandbox --disable-crash-reporter --print-background --print-to-pdf-no-header --user-data-dir="' . $profile . '" --print-to-pdf="' . $tmp . '" "' . $printUrl . '" > "' . $chromeLog . '" 2>&1"';
+    // --virtual-time-budget: รอให้ฟอนต์ที่ฝังโหลดและสคริปต์จัดข้อความทำงานเสร็จก่อนพิมพ์
+    $cmd = 'cmd.exe /c ""' . $chrome . '" --headless=new --disable-gpu --no-sandbox --disable-crash-reporter --virtual-time-budget=5000 --print-background --print-to-pdf-no-header --user-data-dir="' . $profile . '" --print-to-pdf="' . $tmp . '" "' . $printUrl . '" > "' . $chromeLog . '" 2>&1"';
     exec($cmd);
 
     if (!is_file($tmp) || filesize($tmp) < 1000) {

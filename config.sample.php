@@ -20,11 +20,18 @@ return [
     // ใช้ลงลายมือชื่อ URL ที่ให้ Chrome เปิดหน้าพิมพ์โดยไม่ต้องล็อกอิน — ตั้งเป็นค่าสุ่มยาวๆ
     'app_secret' => 'CHANGE_ME_TO_A_LONG_RANDOM_STRING',
 
-    // ---------- การล็อกอินด้วย UP Account ----------
+    // ---------- การยืนยันตัวตน ----------
+    // 'sso'  = เข้าสู่ระบบส่วนกลางผ่าน MSC_ACC (Single Sign-On)
     // 'ldap' = ตรวจสอบกับ LDAP/AD ของมหาวิทยาลัย (ต้องเปิด extension=ldap ใน php.ini)
     // 'dev'  = โหมดทดสอบ รับทุก username/password ห้ามใช้บนเซิร์ฟเวอร์จริง
     'auth' => [
-        'mode' => 'ldap',
+        'mode' => 'sso',
+        'sso' => [
+            'login_url'     => 'https://www.medsci.up.ac.th/msc_acc/sso/login.php',
+            'verify_url'    => 'https://www.medsci.up.ac.th/msc_acc/api/verify.php',
+            'client_id'     => 'EFORM',
+            'client_secret' => 'CHANGE_ME',
+        ],
         'ldap' => [
             'uri'          => 'ldaps://ldap.example.up.ac.th:636',
             // %s จะถูกแทนด้วย username ที่ผู้ใช้กรอก เช่น 'UP\\%s' หรือ 'uid=%s,ou=people,dc=up,dc=ac,dc=th'

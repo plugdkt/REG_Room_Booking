@@ -8,6 +8,17 @@ if (!preg_match('~^/[^/\\\\]~', $next)) $next = '';
 
 if (current_user()) redirect($next ?: 'index.php');
 
+if (config('auth.mode') === 'sso') {
+    start_session();
+    $_SESSION['sso_next'] = $next ?: 'index.php';
+    $sso = config('auth.sso');
+    $loginUrl = $sso['login_url'] ?? 'https://www.medsci.up.ac.th/msc_acc/sso/login.php';
+    $callbackUrl = url('sso_callback.php');
+    $redirectUrl = $loginUrl . '?client_id=' . urlencode((string)$sso['client_id']) . '&redirect_uri=' . urlencode($callbackUrl);
+    header('Location: ' . $redirectUrl);
+    exit;
+}
+
 $error = '';
 $username = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

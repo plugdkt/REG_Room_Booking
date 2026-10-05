@@ -34,7 +34,7 @@
    ```
    icacls "C:\inetpub\wwwroot\eform\uploads\dms" /grant "IIS_IUSRS:(OI)(CI)M"
    ```
-5. ติดตั้งฟอนต์ **TH Niramit AS** บนเซิร์ฟเวอร์ (Install for all users) — เป็นฟอนต์เดียวกับแบบฟอร์มต้นฉบับ ใช้พิมพ์ข้อมูลที่ผู้ใช้กรอก
+5. ติดตั้งฟอนต์ **TH Sarabun New** บนเซิร์ฟเวอร์ (Install for all users) — ใช้พิมพ์ข้อมูลที่ผู้ใช้กรอกลงแบบฟอร์ม (ตัวแบบฟอร์มเป็นเวกเตอร์ ไม่ต้องใช้ฟอนต์)
 6. FastCGI ของ PHP ต้องมี `maxInstances` มากกว่า 1 เพราะระหว่างสร้าง PDF จะมี request ซ้อน (Chrome เรียก `print_booking.php` กลับมา)
 7. ลงทะเบียน Connect Path กับ DMS ที่ https://dms.up.ac.th/dms_main/data/connect_edit.aspx สำหรับทั้งสองแบบฟอร์ม:
    `https://www.medsci.up.ac.th/eform/print_booking_pdf.php` (DMS เรียกเป็น `?ref={ref}`)

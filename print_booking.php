@@ -23,7 +23,7 @@ $values = form_values($b, date('Y-m-d'));
 
 // พื้นหลัง: SVG ของแบบฟอร์มต้นฉบับ ฝังในหน้าโดยตรงเพื่อให้ PDF เป็นเวกเตอร์คมชัด
 $bg = file_get_contents(APP_ROOT . "/templates/$type.svg");
-$bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 class="bg"', $bg, 1);
+$bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 class="bg" id="form-bg"', $bg, 1);
 ?>
 <!doctype html>
 <html lang="th">
@@ -35,7 +35,7 @@ $bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 cl
   html, body { margin: 0; background: #e9e6ee; }
   .page { position: relative; width: 595.32pt; height: 841.92pt; margin: 12px auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.15); overflow: hidden; }
   .page svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .ov text { font-family: "TH Niramit AS", "TH NiramitAS", "TH Sarabun New", sans-serif; font-size: 12px; fill: #000; }
+  .ov text { font-family: "TH Sarabun New", "THSarabunNew", "TH SarabunPSK", sans-serif; font-size: 15px; fill: #000; }
   .ov text.tick { font-family: "Segoe UI Symbol", "DejaVu Sans", sans-serif; font-size: 10px; font-weight: 700; }
   .toolbar { position: sticky; top: 0; z-index: 2; background: #3f1d5e; color: #fff; padding: 8px 16px; display: flex; gap: 12px; align-items: center; font-family: "Leelawadee UI", Tahoma, sans-serif; font-size: 14px; }
   .toolbar button, .toolbar a { font: inherit; padding: 4px 14px; border-radius: 6px; border: 0; cursor: pointer; text-decoration: none; background: #c9a227; color: #2b1c00; }
@@ -63,8 +63,13 @@ $bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 cl
 
 <div class="page">
   <?= $bg ?>
-  <!-- viewBox หน่วย pt ตรงกับพิกัดใน FORM_LAYOUT; font-size 12 = 12pt เท่าตัวอักษรในแบบฟอร์ม -->
+  <!-- viewBox หน่วย pt ตรงกับพิกัดใน FORM_LAYOUT; TH Sarabun New 15pt สูงพอๆ กับ TH Niramit AS 12pt ของแบบฟอร์ม -->
   <svg class="ov" viewBox="0 0 595.32 841.92" xmlns="http://www.w3.org/2000/svg">
+    <?php foreach (FORM_MOVES[$type] ?? [] as $i => [$x0, $y0, $x1, $y1, $dy]): ?>
+    <clipPath id="mv<?= $i ?>"><rect x="<?= $x0 ?>" y="<?= $y0 ?>" width="<?= $x1 - $x0 ?>" height="<?= $y1 - $y0 ?>"/></clipPath>
+    <rect x="<?= $x0 ?>" y="<?= $y0 ?>" width="<?= $x1 - $x0 ?>" height="<?= $y1 - $y0 ?>" fill="#fff"/>
+    <use href="#form-bg" clip-path="url(#mv<?= $i ?>)" transform="translate(0 <?= $dy ?>)"/>
+    <?php endforeach; ?>
     <?php foreach (FORM_LAYOUT[$type] as $key => [$x0, $x1, $y, $align]):
         $val = (string)($values[$key] ?? '');
         if ($val === '') continue;

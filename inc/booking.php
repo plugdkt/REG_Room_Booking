@@ -129,11 +129,19 @@ function booking_validate(string $type, array $in): array
 
 function booking_create(string $type, array $user, array $d): string
 {
-    $ref = bin2hex(random_bytes(7));
     $cols = array_merge(['ref', 'form_type', 'user_login'], BOOKING_FIELDS);
     $sql = 'INSERT INTO bookings (' . implode(',', $cols) . ') VALUES (' . rtrim(str_repeat('?,', count($cols)), ',') . ')';
-    db()->prepare($sql)->execute(array_merge([$ref, $type, $user['login']], array_map(fn($f) => $d[$f], BOOKING_FIELDS)));
-    return $ref;
+    $values = array_map(fn($f) => $d[$f], BOOKING_FIELDS);
+    for ($try = 0; ; $try++) {
+        // DMS ใช้ ref เป็นตัวเลข (เหมือนระบบขอรถ) จึงสุ่มเลข 9 หลัก — อยู่ในช่วง int 32 บิต และเดาเลขของคนอื่นไม่ได้
+        $ref = (string)random_int(100000000, 999999999);
+        try {
+            db()->prepare($sql)->execute(array_merge([$ref, $type, $user['login']], $values));
+            return $ref;
+        } catch (PDOException $e) {
+            if ($e->getCode() !== '23000' || $try >= 5) throw $e; // 23000 = ref ซ้ำ สุ่มใหม่
+        }
+    }
 }
 
 function booking_update(string $ref, array $d): void

@@ -7,8 +7,23 @@
  */
 require __DIR__ . '/inc/bootstrap.php';
 
+/** บันทึกทุกครั้งที่มีการเรียก endpoint นี้ ไว้ตรวจสอบว่า DMS มาดึงไฟล์หรือไม่ (uploads/dms/dms_access.log) */
+function dms_log(string $result): void
+{
+    $line = sprintf("[%s] %s %s %s ?%s -> %s | %s\n",
+        date('Y-m-d H:i:s'),
+        $_SERVER['REMOTE_ADDR'] ?? '-',
+        $_SERVER['REQUEST_METHOD'] ?? '-',
+        $_SERVER['SCRIPT_NAME'] ?? '-',
+        $_SERVER['QUERY_STRING'] ?? '',
+        $result,
+        substr((string)($_SERVER['HTTP_USER_AGENT'] ?? '-'), 0, 120));
+    @file_put_contents(rtrim((string)config('pdf_dir'), '/\\') . '/dms_access.log', $line, FILE_APPEND | LOCK_EX);
+}
+
 $ref = (string)($_GET['ref'] ?? '');
 if (!preg_match('/^[a-f0-9]{8,32}$/', $ref)) {
+    dms_log('400 invalid ref');
     http_response_code(400);
     exit('invalid ref');
 }
@@ -33,12 +48,14 @@ if (isset($_GET['generate'])) {
         json_response(['success' => false, 'message' => 'สร้าง PDF ไม่สำเร็จ: ' . $e->getMessage()], 500);
     }
     db()->prepare('UPDATE bookings SET dms_sent_at = NOW() WHERE ref = ?')->execute([$ref]);
+    dms_log('generated, redirect user to ' . dms_link($b));
     json_response(['success' => true, 'redirect' => dms_link($b)]);
 }
 
 // ---------- DMS ดึงไฟล์ ----------
 $b = booking_find($ref);
 if (!$b) {
+    dms_log('404 ref not in database');
     http_response_code(404);
     exit('document not found');
 }
@@ -50,6 +67,7 @@ if (!is_file($file)) {
         pdf_generate($b);
     } catch (Throwable $e) {
         error_log('[reg_room_booking] fallback pdf error ' . $ref . ': ' . $e->getMessage());
+        dms_log('503 pdf generate failed: ' . $e->getMessage());
         http_response_code(503);
         header('Content-Type: text/html; charset=utf-8');
         exit('<p>ยังไม่มีไฟล์เอกสาร กรุณากลับไปที่ระบบขอใช้ห้องเรียนแล้วกด "ส่งเข้าระบบ DMS" อีกครั้ง</p>');
@@ -60,6 +78,7 @@ if ($b['dms_fetched_at'] === null) {
     db()->prepare('UPDATE bookings SET dms_fetched_at = NOW() WHERE ref = ?')->execute([$ref]);
 }
 
+dms_log('200 sent pdf ' . filesize($file) . ' bytes');
 header('Content-Type: application/pdf');
 header('Content-Length: ' . filesize($file));
 header('Content-Disposition: inline; filename="room_booking_' . $ref . '.pdf"');

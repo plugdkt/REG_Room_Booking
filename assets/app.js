@@ -5,6 +5,10 @@
   document.querySelectorAll('[data-send-dms]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('ยืนยันส่งเอกสารเข้าระบบ DMS?\nหลังจาก DMS รับเอกสารแล้วจะไม่สามารถแก้ไขได้')) return;
+      
+      // เทคนิคกัน Popup Blocker: เปิดแท็บใหม่ไว้ล่วงหน้าทันทีที่มี user click interaction
+      const dmsWindow = window.open('about:blank', '_blank');
+
       const label = btn.textContent;
       const status = document.getElementById('dms-status');
       btn.disabled = true;
@@ -15,10 +19,23 @@
         const res = await fetch(btn.dataset.sendDms, { method: 'POST', body, headers: { 'X-CSRF-Token': csrf } });
         const data = await res.json().catch(() => ({ success: false, message: 'เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (HTTP ' + res.status + ')' }));
         if (!data.success) throw new Error(data.message || 'สร้างเอกสารไม่สำเร็จ');
-        btn.textContent = 'กำลังเปิดระบบ DMS...';
-        if (status) { status.className = 'alert alert-ok'; status.textContent = 'สร้างเอกสารสำเร็จ กำลังไปยังระบบ DMS...'; }
-        window.location.href = data.redirect;
+        
+        btn.textContent = 'ส่งเอกสารเข้าระบบ DMS สำเร็จ';
+        if (dmsWindow) {
+          dmsWindow.location.href = data.redirect;
+          if (status) { status.className = 'alert alert-ok'; status.textContent = 'สร้างเอกสารสำเร็จ เปิดระบบ DMS ในแท็บใหม่แล้ว'; }
+        } else {
+          // กรณีเบราว์เซอร์บล็อกแท็บไว้จริงๆ ให้ปุ่มเป็นลิงก์กดเปิดเองได้ทันที
+          if (status) {
+            status.className = 'alert alert-ok';
+            status.innerHTML = 'สร้างเอกสารสำเร็จ กรุณา <a href="' + data.redirect + '" target="_blank" style="text-decoration:underline;font-weight:bold;">คลิกที่นี่เพื่อเปิดระบบ DMS</a>';
+          }
+        }
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } catch (err) {
+        if (dmsWindow) dmsWindow.close();
         btn.disabled = false;
         btn.textContent = label;
         if (status) { status.className = 'alert alert-err'; status.textContent = err.message; status.hidden = false; }

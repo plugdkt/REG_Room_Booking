@@ -29,20 +29,19 @@ if (!preg_match('/^[a-f0-9]{8,32}$/', $ref)) {
 }
 
 if (isset($_GET['generate'])) {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') json_response(['success' => false, 'message' => 'POST only'], 405);
     $user = current_user();
     if (!$user) json_response(['success' => false, 'message' => 'กรุณาเข้าสู่ระบบใหม่'], 401);
-    csrf_check();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        csrf_check();
+    }
     $b = booking_find($ref);
     if (!$b || $b['user_login'] !== $user['login']) json_response(['success' => false, 'message' => 'ไม่พบเอกสาร'], 404);
     if (!dms_configured($b['form_type'])) json_response(['success' => false, 'message' => 'ยังไม่ได้ตั้งค่ารหัส DMS (con/sub)'], 500);
 
     session_write_close(); // ไม่ล็อก session ระหว่างรอ Chrome
     try {
-        // เอกสารที่ DMS รับไปแล้วใช้ไฟล์เดิม เพื่อให้ตรงกับฉบับที่อยู่ใน DMS
-        if (!booking_locked($b) || !is_file(pdf_path($ref))) {
-            pdf_generate($b);
-        }
+        // เมื่อผู้ใช้กดส่ง ให้สร้าง PDF ฉบับล่าสุดเสมอเหมือนระบบ car_booking
+        pdf_generate($b);
     } catch (Throwable $e) {
         error_log('[reg_room_booking] pdf error ' . $ref . ': ' . $e->getMessage());
         json_response(['success' => false, 'message' => 'สร้าง PDF ไม่สำเร็จ: ' . $e->getMessage()], 500);

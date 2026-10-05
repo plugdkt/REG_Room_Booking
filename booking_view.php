@@ -49,12 +49,9 @@ page_header('รายละเอียดเอกสาร');
 </div>
 
 <div class="actions">
-  <?php if (dms_configured($b['form_type'])): ?>
-    <button class="btn btn-dms" type="button" data-send-dms="<?= h(url('print_booking_pdf.php?generate=1&ref=' . $b['ref'])) ?>">
-      <?= $b['dms_sent_at'] ? 'ส่งเข้าระบบ DMS อีกครั้ง' : 'ส่งเข้าระบบ DMS' ?>
-    </button>
-  <?php endif; ?>
-  <a class="btn" href="<?= h(url('print_booking.php?ref=' . $b['ref'])) ?>" target="_blank">ดูตัวอย่าง / พิมพ์</a>
+  <a class="btn btn-dms" href="<?= h(url('print_booking.php?ref=' . $b['ref'])) ?>">
+    ดูตัวอย่างเอกสาร / ส่งเข้าระบบ DMS
+  </a>
   <?php if (!$locked): ?>
     <a class="btn" href="<?= h(url('booking_form.php?ref=' . $b['ref'])) ?>">แก้ไข</a>
     <form method="post" data-confirm="ต้องการลบเอกสารนี้?" style="margin:0">

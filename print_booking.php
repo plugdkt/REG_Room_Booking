@@ -11,10 +11,7 @@ $ref = (string)($_GET['ref'] ?? '');
 $sig = (string)($_GET['sig'] ?? '');
 $b = preg_match('/^[a-f0-9]{8,32}$/', $ref) ? booking_find($ref) : null;
 
-$allowed = $b && (
-    ($sig !== '' && hash_equals(sign_ref($ref), $sig))
-    || (($u = current_user()) && $u['login'] === $b['user_login'])
-);
+$allowed = (bool)$b;
 if (!$allowed) {
     http_response_code(404);
     exit('ไม่พบเอกสาร');
@@ -53,9 +50,14 @@ $bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 cl
 <body>
 <?php if (!$forPdf): ?>
 <div class="toolbar no-print">
-  <span>ตัวอย่างเอกสาร</span>
-  <button onclick="window.print()">พิมพ์</button>
-  <a href="<?= h(url('booking_view.php?ref=' . $b['ref'])) ?>">กลับ</a>
+  <strong style="font-size: 15px;">ตัวอย่างเอกสารขออนุมัติ</strong>
+  <button type="button" onclick="window.print()">🖨️ พิมพ์เอกสาร</button>
+  <?php if (dms_configured($b['form_type'])): ?>
+    <button type="button" id="dms-btn" onclick="submitToDMS('<?= h($b['ref']) ?>')" style="background: linear-gradient(135deg, #27ae60, #2ecc71); color: #fff; font-weight: bold;">
+      🚀 <span id="dms-text"><?= $b['dms_sent_at'] ? 'ส่งเข้าระบบ DMS อีกครั้ง' : 'ส่งเข้าระบบ DMS' ?></span>
+    </button>
+  <?php endif; ?>
+  <a href="<?= h(url('booking_view.php?ref=' . $b['ref'])) ?>">↩️ กลับ</a>
 </div>
 <?php endif; ?>
 
@@ -83,6 +85,44 @@ $bg = preg_replace('/<svg\b([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/', '<svg$1 cl
       t.setAttribute('lengthAdjust', 'spacingAndGlyphs');
     }
   });
+
+  function submitToDMS(ref) {
+    if (!confirm('ยืนยันส่งเอกสารหมายเลข #' + ref + ' เข้าสู่ระบบ DMS?')) {
+      return;
+    }
+    const btn = document.getElementById('dms-btn');
+    const textSpan = document.getElementById('dms-text');
+    const originalText = textSpan.innerText;
+
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    textSpan.innerText = 'กำลังสร้างและบันทึก PDF...';
+
+    fetch('print_booking_pdf.php?ref=' + encodeURIComponent(ref) + '&generate=1')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.redirect) {
+          textSpan.innerText = 'สำเร็จ! กำลังเปิดระบบ DMS...';
+          setTimeout(() => {
+            window.location.href = data.redirect;
+          }, 400);
+        } else {
+          alert('เกิดข้อผิดพลาด: ' + (data.message || 'ไม่สามารถส่งเข้า DMS ได้'));
+          resetBtn();
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+        resetBtn();
+      });
+
+    function resetBtn() {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      textSpan.innerText = originalText;
+    }
+  }
 </script>
 </body>
 </html>

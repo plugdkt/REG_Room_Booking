@@ -204,64 +204,17 @@ function pdf_generate(array $b): string
     @unlink($probe);
     if (!is_dir($profile) && !@mkdir($profile, 0775, true)) throw new RuntimeException("สร้างโฟลเดอร์ $profile ไม่ได้ — ตรวจสอบสิทธิ์โฟลเดอร์");
 
-    // 2) หน้าเอกสารต้องเปิดได้จาก URL ที่ Chrome จะใช้
     $base = rtrim((string)(config('internal_base_url') ?: config('base_url')), '/');
-    $printUrl = $base . '/print_booking.php?' . http_build_query(['ref' => $b['ref'], 'sig' => sign_ref($b['ref'])]);
-    if (function_exists('curl_init')) {
-        $ch = curl_init($printUrl);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_CONNECTTIMEOUT => 5]);
-        curl_exec($ch);
-        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $cerr = curl_error($ch);
-        curl_close($ch);
-        if ($code !== 200) {
-            throw new RuntimeException("เซิร์ฟเวอร์เปิดหน้าเอกสาร $base/print_booking.php ไม่ได้ (" . ($cerr ?: "HTTP $code")
-                . ") — แก้ internal_base_url ใน config.php เช่นใช้โดเมนจริง " . config('base_url'));
-        }
-    }
+    $printUrl = $base . '/print_booking.php?ref=' . rawurlencode($b['ref']);
 
-    $args = [
-        $chrome,
-        '--headless=new',
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-extensions',
-        '--print-background',
-        '--print-to-pdf-no-header',
-        '--no-pdf-header-footer',
-        '--user-data-dir=' . $profile,
-        '--print-to-pdf=' . $tmp,
-        $printUrl,
-    ];
-    // ส่งเป็น array เพื่อให้ PHP quote อาร์กิวเมนต์เองโดยไม่ผ่าน cmd.exe; เก็บ log ของ Chrome ไว้ใน chrome_last.log
-    $null = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
-    $proc = proc_open($args, [0 => ['pipe', 'r'], 1 => ['file', $null, 'w'], 2 => ['file', $chromeLog, 'w']], $pipes);
-    if (!is_resource($proc)) throw new RuntimeException('เรียก Chrome ไม่สำเร็จ (proc_open ถูกปิดใน php.ini หรือไม่มีสิทธิ์รันโปรแกรม)');
-    fclose($pipes[0]);
-
-    $deadline = time() + (int)config('pdf_timeout_sec', 60);
-    while (($st = proc_get_status($proc))['running']) {
-        if (time() > $deadline) {
-            // proc_terminate ไม่ฆ่า process ลูกบน Windows จึงใช้ taskkill /T
-            if (DIRECTORY_SEPARATOR === '\\') {
-                exec('taskkill /F /T /PID ' . (int)$st['pid'] . ' 2>NUL');
-            } else {
-                proc_terminate($proc, 9);
-            }
-            proc_close($proc);
-            @unlink($tmp);
-            throw new RuntimeException('Chrome ใช้เวลานานเกินกำหนด (timeout)');
-        }
-        usleep(200_000);
-    }
-    $exit = $st['exitcode'];
-    proc_close($proc);
+    // บน Windows IIS ใช้ cmd.exe /c เพื่อไม่ให้ติด Access Denied ของ ProcessSingleton
+    $cmd = 'cmd.exe /c ""' . $chrome . '" --headless=new --disable-gpu --no-sandbox --disable-crash-reporter --print-background --print-to-pdf-no-header --user-data-dir="' . $profile . '" --print-to-pdf="' . $tmp . '" "' . $printUrl . '" > "' . $chromeLog . '" 2>&1"';
+    exec($cmd);
 
     if (!is_file($tmp) || filesize($tmp) < 1000) {
         @unlink($tmp);
         $tail = trim(implode("\n", array_slice(@file($chromeLog, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [], -3)));
-        throw new RuntimeException("Chrome ไม่ได้สร้างไฟล์ PDF (exit code $exit)" . ($tail !== '' ? " — Chrome: $tail" : '')
+        throw new RuntimeException("Chrome ไม่ได้สร้างไฟล์ PDF" . ($tail !== '' ? " — Chrome: $tail" : '')
             . " — log เต็มอยู่ที่ $chromeLog");
     }
     @unlink($target);

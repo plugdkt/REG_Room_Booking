@@ -25,12 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ref = booking_create($type, $user, $data);
         }
         // จำข้อมูลผู้ขอไว้เติมให้ครั้งถัดไป
-        $_SESSION['last_requester'] = array_intersect_key($data, array_flip(['prefix', 'fullname', 'faculty', 'department', 'phone', 'position']));
+        $_SESSION['last_requester'] = array_intersect_key($data, array_flip(['fullname', 'department', 'phone', 'position']));
         flash('บันทึกเอกสารเรียบร้อย ตรวจสอบข้อมูลแล้วกด "ส่งเข้าระบบ DMS"');
         redirect('booking_view.php?ref=' . $ref);
     }
 } elseif ($booking) {
     $data = $booking;
+    $data['fullname'] = $booking['prefix'] . $booking['fullname']; // เอกสารเก่าที่เก็บคำนำหน้าแยกไว้
     $data['time_start'] = hm($booking['time_start']);
     $data['time_end'] = hm($booking['time_end']);
 } else {
@@ -61,6 +62,37 @@ function field(string $name, string $label, array $data, array $errors, string $
     <?php
 }
 
+/** เลือกเวลาแบบ 24 ชั่วโมง (ชั่วโมง : นาที) — ไม่ใช้ <input type=time> เพราะบางเครื่องแสดง AM/PM ทำให้ผู้ใช้สับสน */
+function time_field(string $name, string $label, array $data, array $errors): void
+{
+    [$hh, $mm] = array_pad(explode(':', (string)($data[$name] ?? '')), 2, '');
+    $minutes = array_map(fn($m) => sprintf('%02d', $m), range(0, 55, 5));
+    if ($mm !== '' && !in_array($mm, $minutes, true)) $minutes[] = $mm; // เวลาเดิมที่ไม่ลงตัว 5 นาที
+    sort($minutes);
+    ?>
+    <div class="f c4<?= isset($errors[$name]) ? ' has-err' : '' ?>">
+      <label for="f-<?= $name ?>_h"><?= h($label) ?> (24 ชั่วโมง)</label>
+      <div class="timepick">
+        <select id="f-<?= $name ?>_h" name="<?= $name ?>_h" aria-label="ชั่วโมง">
+          <option value="">ชม.</option>
+          <?php for ($i = 0; $i < 24; $i++): $v = sprintf('%02d', $i); ?>
+            <option value="<?= $v ?>"<?= $hh === $v ? ' selected' : '' ?>><?= $v ?></option>
+          <?php endfor; ?>
+        </select>
+        <span>:</span>
+        <select name="<?= $name ?>_m" aria-label="นาที">
+          <option value="">นาที</option>
+          <?php foreach ($minutes as $v): ?>
+            <option value="<?= $v ?>"<?= $mm === $v ? ' selected' : '' ?>><?= $v ?></option>
+          <?php endforeach; ?>
+        </select>
+        <span>น.</span>
+      </div>
+      <?php err($name, $errors); ?>
+    </div>
+    <?php
+}
+
 function err(string $name, array $errors): void
 {
     if (isset($errors[$name])) echo '<span class="err-msg">' . h($errors[$name]) . '</span>';
@@ -80,18 +112,11 @@ page_header($booking ? 'แก้ไขเอกสาร' : 'สร้างเ
     <fieldset>
       <legend>ข้อมูลผู้ขอใช้ห้อง</legend>
       <div class="grid">
-        <div class="f c3<?= isset($errors['prefix']) ? ' has-err' : '' ?>">
-          <label for="f-prefix">คำนำหน้า</label>
-          <select id="f-prefix" name="prefix">
-            <option value="">— เลือก —</option>
-            <?php foreach (PREFIXES as $p): ?>
-              <option<?= $data['prefix'] === $p ? ' selected' : '' ?>><?= h($p) ?></option>
-            <?php endforeach; ?>
-          </select>
-          <?php err('prefix', $errors); ?>
+        <?php field('fullname', 'ชื่อ - สกุล (รวมคำนำหน้า)', $data, $errors, '', ['required' => 'required', 'placeholder' => 'เช่น นายวิทยา สุนสะดี']); ?>
+        <div class="f c6">
+          <label for="f-faculty">สังกัดคณะ/วิทยาลัย/กอง/ศูนย์</label>
+          <input type="text" id="f-faculty" value="<?= h((string)config('faculty', 'คณะวิทยาศาสตร์การแพทย์')) ?>" readonly class="readonly">
         </div>
-        <?php field('fullname', 'ชื่อ - สกุล', $data, $errors, 'c9', ['required' => 'required']); ?>
-        <?php field('faculty', 'สังกัดคณะ/วิทยาลัย/กอง/ศูนย์', $data, $errors, 'c6', ['required' => 'required']); ?>
         <?php field('department', 'สาขาวิชา/ส่วนงาน', $data, $errors, 'c6'); ?>
         <?php field('position', 'ตำแหน่ง', $data, $errors, 'c6', ['required' => 'required']); ?>
         <?php field('phone', 'โทร', $data, $errors, 'c6', ['type' => 'tel', 'required' => 'required']); ?>
@@ -123,8 +148,8 @@ page_header($booking ? 'แก้ไขเอกสาร' : 'สร้างเ
 
       <div class="grid" style="margin-top:8px">
         <?php field('booking_date', 'วันที่ใช้ห้อง', $data, $errors, 'c4', ['type' => 'date', 'min' => $minDate, 'required' => 'required']); ?>
-        <?php field('time_start', 'ตั้งแต่เวลา (น.)', $data, $errors, 'c4', ['type' => 'time', 'required' => 'required']); ?>
-        <?php field('time_end', 'ถึงเวลา (น.)', $data, $errors, 'c4', ['type' => 'time', 'required' => 'required']); ?>
+        <?php time_field('time_start', 'ตั้งแต่เวลา', $data, $errors); ?>
+        <?php time_field('time_end', 'ถึงเวลา', $data, $errors); ?>
         <div class="f"><span class="hint">การจองห้องจะต้องดำเนินการก่อน <?= (int)config('min_working_days', 3) ?> วันทำการ — จองได้ตั้งแต่ <?= h(thai_date($minDate, true)) ?> เป็นต้นไป</span></div>
       </div>
     </fieldset>

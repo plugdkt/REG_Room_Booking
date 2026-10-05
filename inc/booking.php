@@ -78,11 +78,13 @@ function booking_validate(string $type, array $in): array
         $d[$f] = trim((string)($in[$f] ?? ''));
     }
     $e = [];
-    $required = ['fullname' => 'ชื่อ-สกุล', 'faculty' => 'สังกัด', 'phone' => 'เบอร์โทร', 'position' => 'ตำแหน่ง'];
+    // ชื่อจาก SSO มีคำนำหน้าอยู่แล้ว จึงไม่แยกช่องคำนำหน้า และสังกัดกำหนดตายตัวจาก config
+    $d['prefix']  = '';
+    $d['faculty'] = (string)config('faculty', 'คณะวิทยาศาสตร์การแพทย์');
+    $required = ['fullname' => 'ชื่อ-สกุล', 'phone' => 'เบอร์โทร', 'position' => 'ตำแหน่ง'];
     foreach ($required as $f => $label) {
         if ($d[$f] === '') $e[$f] = "กรุณากรอก{$label}";
     }
-    if (!in_array($d['prefix'], PREFIXES, true)) $e['prefix'] = 'กรุณาเลือกคำนำหน้า';
 
     if ($type === 'classroom') {
         if (!in_array($d['room_kind'], ['classroom', 'hybrid'], true)) {
@@ -99,15 +101,15 @@ function booking_validate(string $type, array $in): array
     $date = DateTime::createFromFormat('!Y-m-d', $d['booking_date']);
     if (!$date || $date->format('Y-m-d') !== $d['booking_date']) {
         $e['booking_date'] = 'กรุณาเลือกวันที่';
-    } else {
-        $min = earliest_booking_date((int)config('min_working_days', 3));
-        if ($d['booking_date'] < $min) {
-            $e['booking_date'] = 'การจองห้องต้องดำเนินการก่อน ' . config('min_working_days', 3)
-                . ' วันทำการ (จองได้ตั้งแต่ ' . thai_date($min) . ')';
-        }
+    } elseif ($msg = booking_date_too_soon($d['booking_date'])) {
+        $e['booking_date'] = $msg;
     }
     foreach (['time_start', 'time_end'] as $f) {
-        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $d[$f])) $e[$f] = 'กรุณาระบุเวลา';
+        // ฟอร์มส่งมาเป็นชั่วโมง/นาทีแยกกัน (เลือกแบบ 24 ชั่วโมง ไม่มี AM/PM)
+        if (isset($in[$f . '_h'], $in[$f . '_m']) && $in[$f . '_h'] !== '' && $in[$f . '_m'] !== '') {
+            $d[$f] = sprintf('%02d:%02d', (int)$in[$f . '_h'], (int)$in[$f . '_m']);
+        }
+        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $d[$f])) $e[$f] = 'กรุณาเลือกเวลา';
     }
     if (!isset($e['time_start'], $e['time_end']) && $d['time_end'] <= $d['time_start']) {
         $e['time_end'] = 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม';
@@ -125,6 +127,19 @@ function booking_validate(string $type, array $in): array
     if (mb_strlen($d['purpose_detail']) > 500) $e['purpose_detail'] = 'ข้อความยาวเกินไป';
 
     return [$d, $e];
+}
+
+/**
+ * ตรวจเงื่อนไข "การจองห้องจะต้องดำเนินการก่อน N วันทำการ" นับจากวันนี้
+ * ใช้ทั้งตอนบันทึกและตอนกดส่งเข้า DMS (เผื่อบันทึกร่างไว้นานแล้วค่อยส่ง)
+ * @return string|null ข้อความแจ้งเตือน หรือ null ถ้าผ่านเงื่อนไข
+ */
+function booking_date_too_soon(string $bookingDate): ?string
+{
+    $days = (int)config('min_working_days', 3);
+    $min = earliest_booking_date($days);
+    if ($bookingDate >= $min) return null;
+    return "การจองห้องต้องดำเนินการก่อน $days วันทำการ — วันนี้จองได้ตั้งแต่ " . thai_date($min, true) . ' เป็นต้นไป';
 }
 
 function booking_create(string $type, array $user, array $d): string

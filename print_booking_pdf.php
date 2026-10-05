@@ -37,6 +37,11 @@ if (isset($_GET['generate'])) {
     $b = booking_find($ref);
     if (!$b || $b['user_login'] !== $user['login']) json_response(['success' => false, 'message' => 'ไม่พบเอกสาร'], 404);
     if (!dms_configured($b['form_type'])) json_response(['success' => false, 'message' => 'ยังไม่ได้ตั้งค่ารหัส DMS (con/sub)'], 500);
+    // ตรวจเงื่อนไข 3 วันทำการอีกครั้งตอนส่ง (เอกสารที่ DMS รับไปแล้วส่งซ้ำได้)
+    if (!booking_locked($b) && ($msg = booking_date_too_soon($b['booking_date']))) {
+        dms_log('blocked: booking date too soon ' . $b['booking_date']);
+        json_response(['success' => false, 'message' => $msg . ' กรุณาแก้ไขวันที่ใช้ห้องในเอกสารก่อนส่ง'], 422);
+    }
 
     session_write_close(); // ไม่ล็อก session ระหว่างรอ Chrome
     try {

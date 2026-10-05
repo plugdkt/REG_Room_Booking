@@ -105,3 +105,7 @@ dl.detail dd { margin: 0; }
   .topbar { padding: 10px 16px; }
   table.list .hide-sm { display: none; }
 }
+
+.timepick { display: flex; align-items: center; gap: 6px; }
+.timepick select { width: auto; min-width: 5.2em; }
+input.readonly { background: #f3f1f6; color: var(--muted); cursor: default; }

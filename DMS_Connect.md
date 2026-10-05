@@ -66,7 +66,7 @@ sequenceDiagram
   * **ระบบขออนุมัติค่าน้ำมันเชื้อเพลิง (con=8026, sub=36):**
     `https://www.medsci.up.ac.th/car_booking/print_fuel_pdf.php?ref={ref}`
   * **ระบบขออนุมัติใช้ห้องเรียน (con=8041, sub=52)** — ใช้ร่วมกันทั้งแบบฟอร์ม Active Learning Classroom และห้องเรียน/Hybrid Classroom:
-    `https://[โดเมนเซิร์ฟเวอร์]/reg_room_booking/print_booking_pdf.php?ref={ref}`
+    `https://www.medsci.up.ac.th/eform/print_booking_pdf.php?ref={ref}`
 
 1. **ออกแบบไฟล์ Endpoint ให้มีหน้าที่หลักคือเช็คและส่งไฟล์:**
    * สคริปต์จะทำการค้นหาว่ามีไฟล์ PDF ที่ประมวลผลเสร็จแล้วบนดิสก์อยู่แล้วหรือไม่
@@ -82,7 +82,7 @@ sequenceDiagram
 
 1. เข้าสู่ระบบ DMS แล้วเปิดหน้าตั้งค่าการเชื่อมต่อตามลิงก์ข้างต้น
 2. ลงทะเบียน **Connect Path** ของแต่ละแบบฟอร์ม (URL ของ PDF Endpoint ในขั้นตอนที่ 4) เช่น
-   `https://[โดเมนระบบต้นทาง]/reg_room_booking/print_booking_pdf.php?ref={ref}`
+   `https://www.medsci.up.ac.th/eform/print_booking_pdf.php?ref={ref}`
 3. นำค่า **con** (รหัสรันระบบ) และ **sub** (รหัสย่อย) ที่ได้จาก DMS มาใช้ใน URL ขั้นตอนที่ 3
    * ระบบขอใช้ห้องเรียน: กรอกใน `config.php` ที่ `dms.forms.alc` (ห้อง Active Learning Classroom) และ `dms.forms.classroom` (ห้องเรียน / Hybrid Classroom) แบบฟอร์มละหนึ่งชุด
 

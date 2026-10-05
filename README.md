@@ -20,24 +20,24 @@
 1. Clone โค้ดลงโฟลเดอร์เว็บไซต์ (PHP 8.1 ขึ้นไป, เปิด `pdo_mysql`, `mbstring` และ `ldap` ถ้าใช้ LDAP)
    ```
    cd C:\inetpub\wwwroot
-   git clone https://github.com/plugdkt/REG_Room_Booking.git reg_room_booking
+   git clone https://github.com/plugdkt/REG_Room_Booking.git eform
    ```
    อัปเดตครั้งถัดไปใช้ `git pull` (ไม่กระทบ `config.php` และไฟล์ PDF ใน `uploads/dms` เพราะอยู่ใน `.gitignore`)
 2. สร้างฐานข้อมูล: `mysql -u root -p < sql/schema.sql` (ใช้กับ MariaDB ได้เหมือนกัน) แล้วสร้าง user ที่มีสิทธิ์เฉพาะ DB นี้
 3. `copy config.sample.php config.php` แล้วแก้ค่า
-   - `base_url` — URL สาธารณะ, `internal_base_url` — URL ที่เซิร์ฟเวอร์เปิดหาตัวเองได้ (ปกติ `http://localhost/reg_room_booking`)
+   - `base_url` — URL สาธารณะ, `internal_base_url` — URL ที่เซิร์ฟเวอร์เปิดหาตัวเองได้ (ปกติ `http://localhost/eform`)
    - `app_secret` — ค่าสุ่มยาว เช่นจาก `php -r "echo bin2hex(random_bytes(32));"`
    - `auth` — ตั้งค่า LDAP ของมหาวิทยาลัย (ขอค่า `uri`, `bind_format`, `base_dn` จากศูนย์เทคโนโลยีสารสนเทศ)
    - `dms.forms.*.con/sub` — รับค่าจากหน้าตั้งค่าการเชื่อมต่อ DMS https://dms.up.ac.th/dms_main/data/connect_edit.aspx (ดูขั้นตอนที่ 5 ใน DMS_Connect.md) ปุ่มส่งจะไม่แสดงจนกว่าจะกรอก
    - `holidays` — วันหยุดราชการที่ไม่นับเป็นวันทำการ
 4. ให้สิทธิ์ **Modify** กับ `uploads\dms` (รวม `chrome_profile`) แก่ `IIS_IUSRS` / identity ของ App Pool
    ```
-   icacls "C:\inetpub\wwwroot\reg_room_booking\uploads\dms" /grant "IIS_IUSRS:(OI)(CI)M"
+   icacls "C:\inetpub\wwwroot\eform\uploads\dms" /grant "IIS_IUSRS:(OI)(CI)M"
    ```
 5. ติดตั้งฟอนต์ **TH Niramit AS** บนเซิร์ฟเวอร์ (Install for all users) — เป็นฟอนต์เดียวกับแบบฟอร์มต้นฉบับ ใช้พิมพ์ข้อมูลที่ผู้ใช้กรอก
 6. FastCGI ของ PHP ต้องมี `maxInstances` มากกว่า 1 เพราะระหว่างสร้าง PDF จะมี request ซ้อน (Chrome เรียก `print_booking.php` กลับมา)
 7. ลงทะเบียน Connect Path กับ DMS ที่ https://dms.up.ac.th/dms_main/data/connect_edit.aspx สำหรับทั้งสองแบบฟอร์ม:
-   `{base_url}/print_booking_pdf.php?ref={ref}`
+   `https://www.medsci.up.ac.th/eform/print_booking_pdf.php` (DMS เรียกเป็น `?ref={ref}`)
 
 `web.config` บล็อกการเข้าถึง `inc/`, `sql/`, `uploads/` และ `config.php` จากเว็บไว้แล้ว
 

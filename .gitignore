@@ -1,0 +1,6 @@
+config.php
+uploads/dms/*.pdf
+uploads/dms/*.tmp
+uploads/dms/chrome_profile/
+.claude/
+*.log

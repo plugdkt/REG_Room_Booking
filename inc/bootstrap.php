@@ -49,7 +49,8 @@ function url(string $path = ''): string
 
 function redirect(string $path): never
 {
-    header('Location: ' . (preg_match('~^https?://~', $path) ? $path : url($path)));
+    // URL เต็ม หรือ path จาก root (เช่น /eform/booking_view.php จาก REQUEST_URI) ใช้ตามนั้น ไม่เติม base_url ซ้ำ
+    header('Location: ' . (preg_match('~^(https?://|/)~', $path) ? $path : url($path)));
     exit;
 }
 

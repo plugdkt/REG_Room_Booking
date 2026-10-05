@@ -11,12 +11,15 @@ if (current_user()) redirect($next ?: 'index.php');
 if (config('auth.mode') === 'sso') {
     start_session();
     $_SESSION['sso_next'] = $next ?: 'index.php';
+    // state ผูกคำขอนี้กับผลลัพธ์ที่ได้กลับมา ป้องกัน Login CSRF (ตาม sso_integration_guide.md)
+    $_SESSION['sso_state'] = bin2hex(random_bytes(16));
     $sso = config('auth.sso');
     $loginUrl = $sso['login_url'] ?? 'https://www.medsci.up.ac.th/msc_acc/sso/login.php';
-    $callbackUrl = url('sso_callback.php');
-    $redirectUrl = $loginUrl . '?client_id=' . urlencode((string)$sso['client_id']) . '&redirect_uri=' . urlencode($callbackUrl);
-    header('Location: ' . $redirectUrl);
-    exit;
+    redirect($loginUrl . '?' . http_build_query([
+        'client_id'    => (string)$sso['client_id'],
+        'redirect_uri' => url('sso_callback.php'),
+        'state'        => $_SESSION['sso_state'],
+    ]));
 }
 
 $error = '';

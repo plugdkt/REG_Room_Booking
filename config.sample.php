@@ -29,6 +29,8 @@ return [
         'sso' => [
             'login_url'     => 'https://www.medsci.up.ac.th/msc_acc/sso/login.php',
             'verify_url'    => 'https://www.medsci.up.ac.th/msc_acc/api/verify.php',
+            'logout_url'    => 'https://www.medsci.up.ac.th/msc_acc/sso/logout.php',
+            'verify_ssl'    => true,   // ตรวจใบรับรอง SSL ตอนส่ง client_secret — ตั้ง false เฉพาะเครื่องทดสอบ
             'client_id'     => 'EFORM',
             'client_secret' => 'CHANGE_ME',
         ],

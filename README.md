@@ -25,7 +25,7 @@
    อัปเดตครั้งถัดไปใช้ `git pull` (ไม่กระทบ `config.php` และไฟล์ PDF ใน `uploads/dms` เพราะอยู่ใน `.gitignore`)
 2. สร้างฐานข้อมูล: `mysql -u root -p < sql/schema.sql` (ใช้กับ MariaDB ได้เหมือนกัน) แล้วสร้าง user ที่มีสิทธิ์เฉพาะ DB นี้
 3. `copy config.sample.php config.php` แล้วแก้ค่า
-   - `base_url` — URL สาธารณะ, `internal_base_url` — URL ที่เซิร์ฟเวอร์เปิดหาตัวเองได้ (ปกติ `http://localhost/eform`)
+   - `base_url` — URL สาธารณะ, `internal_base_url` — เว้นว่างไว้ (ใช้ `base_url`) ใส่ค่าเฉพาะเมื่อเซิร์ฟเวอร์เปิดโดเมนตัวเองไม่ได้
    - `app_secret` — ค่าสุ่มยาว เช่นจาก `php -r "echo bin2hex(random_bytes(32));"`
    - `auth` — ตั้งค่า LDAP ของมหาวิทยาลัย (ขอค่า `uri`, `bind_format`, `base_dn` จากศูนย์เทคโนโลยีสารสนเทศ)
    - `dms.forms.*.con/sub` — รับค่าจากหน้าตั้งค่าการเชื่อมต่อ DMS https://dms.up.ac.th/dms_main/data/connect_edit.aspx (ดูขั้นตอนที่ 5 ใน DMS_Connect.md) ปุ่มส่งจะไม่แสดงจนกว่าจะกรอก

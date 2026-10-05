@@ -7,8 +7,9 @@ return [
     // URL สาธารณะของระบบ (ไม่มี / ปิดท้าย) — DMS จะเรียก Connect Path ผ่าน URL นี้
     'base_url' => 'https://www.medsci.up.ac.th/eform',
 
-    // URL ที่ Chrome Headless บนเซิร์ฟเวอร์ใช้เปิดหน้าเอกสาร (ปกติใช้ localhost เพื่อไม่ต้องออกเน็ต)
-    'internal_base_url' => 'http://localhost/eform',
+    // URL ที่ Chrome Headless บนเซิร์ฟเวอร์ใช้เปิดหน้าเอกสาร — เว้นว่าง = ใช้ base_url (แบบเดียวกับระบบขอรถ)
+    // ใส่ค่าเฉพาะเมื่อเซิร์ฟเวอร์เรียกโดเมนของตัวเองไม่ได้ เช่น 'http://localhost/eform'
+    'internal_base_url' => '',
 
     'db' => [
         'dsn'      => 'mysql:host=127.0.0.1;dbname=reg_room_booking;charset=utf8mb4',

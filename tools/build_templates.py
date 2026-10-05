@@ -1,17 +1,19 @@
 """
-สร้างภาพพื้นหลังแบบฟอร์ม (templates/*.svg) จากไฟล์ Word ต้นฉบับ
-ใช้เมื่อมีการแก้แบบฟอร์ม: วางไฟล์ใหม่ทับ templates/alc.docx หรือ templates/classroom.docx แล้วรัน
+สร้างภาพพื้นหลังแบบฟอร์ม (forms/<code>/template.svg) จากไฟล์ Word ต้นฉบับ (forms/<code>/template.docx)
 
-    python tools/build_templates.py
+    python tools/build_templates.py                       ทุกแบบฟอร์ม
+    python tools/build_templates.py leave_request         เฉพาะฟอร์มที่ระบุ
+    python tools/build_templates.py leave_request --fields     แสดงพิกัดเส้นจุด/วงเล็บ ( ) ทั้งหมด
+    python tools/build_templates.py leave_request --scaffold   ร่าง 'layout' สำหรับวางใน form.php
+    เพิ่ม --no-word  ใช้ template.pdf ที่มีอยู่ (ไม่แปลงจาก docx ใหม่)
 
 ต้องการ: Windows + Microsoft Word (แปลง docx→pdf ให้ตรงต้นฉบับ), pip install pymupdf
-ถ้าตำแหน่งช่องในแบบฟอร์มเปลี่ยน ให้ปรับพิกัดใน inc/form_layout.php ด้วย (รันด้วย --fields เพื่อดูพิกัดเส้นจุด)
 """
-import os, re, subprocess, sys
+import glob, os, re, subprocess, sys
 import fitz  # PyMuPDF
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TPL = os.path.join(ROOT, 'templates')
+FORMS = os.path.join(ROOT, 'forms')
 
 
 def docx_to_pdf(docx, pdf):
@@ -22,7 +24,9 @@ def docx_to_pdf(docx, pdf):
     subprocess.run(['powershell', '-NoProfile', '-Command', ps], check=True)
 
 
-def print_fields(page):
+def find_fields(page):
+    """เส้นจุด (DOT) และวงเล็บ ( ) (BOX) พร้อมข้อความที่อยู่หน้าช่อง — หน่วย pt"""
+    out = []
     for b in page.get_text('rawdict')['blocks']:
         for l in b.get('lines', []):
             for s in l['spans']:
@@ -30,18 +34,52 @@ def print_fields(page):
                 t = ''.join(c['c'] for c in ch)
                 for m in re.finditer(r'\.{3,}|\(\s*\)', t):
                     a, z = m.start(), m.end() - 1
-                    print(f"baseline {ch[a]['origin'][1]:6.1f}  x {ch[a]['bbox'][0]:6.1f}-{ch[z]['bbox'][2]:6.1f}  "
-                          f"{'BOX' if t[a] == '(' else 'DOT'}  after: {t[max(0, a - 16):a].strip()}")
+                    out.append({
+                        'kind': 'BOX' if t[a] == '(' else 'DOT',
+                        'x0': ch[a]['bbox'][0], 'x1': ch[z]['bbox'][2], 'y': ch[a]['origin'][1],
+                        'label': re.sub(r'[.\s]+$', '', t[max(0, a - 24):a]).strip(' .()'),
+                    })
+    return sorted(out, key=lambda f: (round(f['y']), f['x0']))
 
 
-for name in ('alc', 'classroom'):
-    docx = os.path.join(TPL, name + '.docx')
-    pdf = os.path.join(TPL, name + '.pdf')
-    docx_to_pdf(docx, pdf)
-    page = fitz.open(pdf)[0]
+def print_fields(fields):
+    for f in fields:
+        print(f"  baseline {f['y']:6.1f}  x {f['x0']:6.1f}-{f['x1']:6.1f}  {f['kind']}  after: {f['label']}")
+
+
+def print_scaffold(code, fields):
+    print(f"\n    // ร่างจาก tools/build_templates.py --scaffold {code} — ตั้งชื่อ key ให้ตรงกับค่าที่ 'values' คืนมา")
+    print("    // แล้วลบช่องที่เป็นของเจ้าหน้าที่/ผู้อนุมัติ (ไม่ต้องให้ผู้ขอกรอก) ออก")
+    print("    'layout' => [")
+    for i, f in enumerate(fields, 1):
+        key = ('box_%02d' if f['kind'] == 'BOX' else 'field_%02d') % i
+        pad = 2 if f['kind'] == 'DOT' else 0  # เว้นระยะจากข้อความหน้าช่องเล็กน้อย
+        align = 'c' if f['kind'] == 'BOX' else 'l'
+        print(f"        '{key}' => [{f['x0'] + pad:.1f}, {f['x1']:.1f}, {f['y']:.1f}, '{align}'],  // {f['label']}")
+    print("    ],")
+
+
+args = [a for a in sys.argv[1:] if not a.startswith('--')]
+dirs = [os.path.join(FORMS, c) for c in args] or sorted(d for d in glob.glob(os.path.join(FORMS, '*')) if os.path.isdir(d))
+
+for d in dirs:
+    code = os.path.basename(d)
+    docx, pdf = os.path.join(d, 'template.docx'), os.path.join(d, 'template.pdf')
+    if '--no-word' not in sys.argv and os.path.isfile(docx):
+        docx_to_pdf(docx, pdf)
+    if not os.path.isfile(pdf):
+        print(f'{code}: ข้าม — ไม่มี template.docx หรือ template.pdf')
+        continue
+    doc = fitz.open(pdf)
+    if len(doc) != 1:
+        print(f'{code}: คำเตือน — แบบฟอร์มมี {len(doc)} หน้า ระบบรองรับหน้าเดียว ใช้หน้าแรก')
+    page = doc[0]
     svg = page.get_svg_image(text_as_path=True)
-    with open(os.path.join(TPL, name + '.svg'), 'w', encoding='utf-8') as f:
+    with open(os.path.join(d, 'template.svg'), 'w', encoding='utf-8') as f:
         f.write(svg)
-    print(f'{name}: {page.rect.width:.2f}x{page.rect.height:.2f}pt -> templates/{name}.svg ({len(svg) // 1024} KB)')
+    print(f'{code}: {page.rect.width:.2f}x{page.rect.height:.2f}pt -> forms/{code}/template.svg ({len(svg) // 1024} KB)')
+    fields = find_fields(page)
     if '--fields' in sys.argv:
-        print_fields(page)
+        print_fields(fields)
+    if '--scaffold' in sys.argv:
+        print_scaffold(code, fields)

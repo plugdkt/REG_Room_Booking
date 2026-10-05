@@ -165,4 +165,5 @@ function earliest_booking_date(int $workingDays, ?string $from = null): string
 }
 
 require __DIR__ . '/auth.php';
-require __DIR__ . '/booking.php';
+require __DIR__ . '/forms.php';
+require __DIR__ . '/submissions.php';

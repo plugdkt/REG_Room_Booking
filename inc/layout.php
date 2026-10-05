@@ -7,6 +7,11 @@ function asset_url(string $path): string
     return url($path) . '?v=' . @filemtime(APP_ROOT . '/' . $path);
 }
 
+function app_name(): string
+{
+    return (string)config('app_name', 'ระบบแบบฟอร์มออนไลน์ (E-Form)');
+}
+
 function page_header(string $title): void
 {
     $user = current_user();
@@ -18,17 +23,18 @@ function page_header(string $title): void
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf" content="<?= h(csrf_token()) ?>">
-<title><?= h($title) ?> · ระบบขอใช้ห้องเรียน</title>
+<title><?= h($title) ?> · <?= h(app_name()) ?></title>
 <link rel="stylesheet" href="<?= h(asset_url('assets/app.css')) ?>">
 </head>
 <body>
 <header class="topbar">
   <a class="brand" href="<?= h(url('index.php')) ?>">
-    <span class="brand-mark">กบศ.</span>
-    <span>ระบบขออนุมัติใช้ห้องเรียน<small>กองบริการการศึกษา มหาวิทยาลัยพะเยา</small></span>
+    <span class="brand-mark">E-Form</span>
+    <span><?= h(app_name()) ?><small><?= h((string)config('app_org', 'คณะวิทยาศาสตร์การแพทย์ มหาวิทยาลัยพะเยา')) ?></small></span>
   </a>
   <?php if ($user): ?>
   <div class="who">
+    <?php if (is_admin($user)): ?><a href="<?= h(url('admin/index.php')) ?>">ผู้ดูแลระบบ</a><?php endif; ?>
     <span><?= h($user['name'] ?: $user['login']) ?></span>
     <a href="<?= h(url('logout.php')) ?>">ออกจากระบบ</a>
   </div>

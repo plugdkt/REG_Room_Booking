@@ -89,8 +89,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid rgba(91,42,134,.2
 .hint { color: var(--muted); font-size: 1rem; }
 .radios { display: flex; flex-wrap: wrap; gap: 6px 22px; }
 .radios label { font-weight: 400; display: flex; gap: 6px; align-items: center; cursor: pointer; }
-.room-opt { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
-.room-opt.off .grid { opacity: .45; }
+.f .label { font-weight: 600; font-size: 1.05rem; margin-bottom: 4px; }
+.f.is-hidden { display: none; }
+.req { color: var(--err); }
+h2.cat { font-size: 1.25rem; color: var(--muted); margin: 18px 0 10px; }
+.filters { padding-bottom: 12px; }
+.pager { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.pager a, .pager strong { padding: 2px 10px; border: 1px solid var(--line); border-radius: 6px; text-decoration: none; }
+.pager strong { background: var(--brand); color: #fff; border-color: var(--brand); }
+.who a + span { margin-left: 4px; }
 
 dl.detail { display: grid; grid-template-columns: 200px 1fr; gap: 6px 16px; margin: 0; }
 dl.detail dt { color: var(--muted); }
@@ -109,3 +116,4 @@ dl.detail dd { margin: 0; }
 .timepick { display: flex; flex-direction: row; align-items: center; gap: 6px; }
 .f .timepick select { width: 5.5em; flex: 0 0 auto; }
 input.readonly { background: #f3f1f6; color: var(--muted); cursor: default; }
+.f.actions { flex-direction: row; flex-wrap: wrap; align-items: center; }

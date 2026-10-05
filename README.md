@@ -17,8 +17,13 @@
 
 ## ติดตั้งบน IIS
 
-1. คัดลอกโฟลเดอร์ไปที่เว็บไซต์ เช่น `C:\inetpub\wwwroot\reg_room_booking` (PHP 8.1 ขึ้นไป, เปิด `pdo_mysql`, `mbstring` และ `ldap` ถ้าใช้ LDAP)
-2. สร้างฐานข้อมูล: `mysql -u root -p < sql/schema.sql` แล้วสร้าง user ที่มีสิทธิ์เฉพาะ DB นี้
+1. Clone โค้ดลงโฟลเดอร์เว็บไซต์ (PHP 8.1 ขึ้นไป, เปิด `pdo_mysql`, `mbstring` และ `ldap` ถ้าใช้ LDAP)
+   ```
+   cd C:\inetpub\wwwroot
+   git clone https://github.com/plugdkt/REG_Room_Booking.git reg_room_booking
+   ```
+   อัปเดตครั้งถัดไปใช้ `git pull` (ไม่กระทบ `config.php` และไฟล์ PDF ใน `uploads/dms` เพราะอยู่ใน `.gitignore`)
+2. สร้างฐานข้อมูล: `mysql -u root -p < sql/schema.sql` (ใช้กับ MariaDB ได้เหมือนกัน) แล้วสร้าง user ที่มีสิทธิ์เฉพาะ DB นี้
 3. `copy config.sample.php config.php` แล้วแก้ค่า
    - `base_url` — URL สาธารณะ, `internal_base_url` — URL ที่เซิร์ฟเวอร์เปิดหาตัวเองได้ (ปกติ `http://localhost/reg_room_booking`)
    - `app_secret` — ค่าสุ่มยาว เช่นจาก `php -r "echo bin2hex(random_bytes(32));"`

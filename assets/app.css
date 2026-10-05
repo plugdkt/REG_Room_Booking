@@ -106,6 +106,6 @@ dl.detail dd { margin: 0; }
   table.list .hide-sm { display: none; }
 }
 
-.timepick { display: flex; align-items: center; gap: 6px; }
-.timepick select { width: auto; min-width: 5.2em; }
+.timepick { display: flex; flex-direction: row; align-items: center; gap: 6px; }
+.f .timepick select { width: 5.5em; flex: 0 0 auto; }
 input.readonly { background: #f3f1f6; color: var(--muted); cursor: default; }

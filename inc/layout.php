@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+/** URL ของไฟล์ css/js พร้อมเลขเวอร์ชันจากเวลาแก้ไขไฟล์ — หลัง git pull เบราว์เซอร์จะโหลดไฟล์ใหม่เอง ไม่ใช้ของเก่าใน cache */
+function asset_url(string $path): string
+{
+    return url($path) . '?v=' . @filemtime(APP_ROOT . '/' . $path);
+}
+
 function page_header(string $title): void
 {
     $user = current_user();
@@ -13,7 +19,7 @@ function page_header(string $title): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf" content="<?= h(csrf_token()) ?>">
 <title><?= h($title) ?> · ระบบขอใช้ห้องเรียน</title>
-<link rel="stylesheet" href="<?= h(url('assets/app.css')) ?>">
+<link rel="stylesheet" href="<?= h(asset_url('assets/app.css')) ?>">
 </head>
 <body>
 <header class="topbar">
@@ -41,7 +47,7 @@ function page_footer(): void
 {
     ?>
 </main>
-<script src="<?= h(url('assets/app.js')) ?>"></script>
+<script src="<?= h(asset_url('assets/app.js')) ?>"></script>
 </body>
 </html>
 <?php
